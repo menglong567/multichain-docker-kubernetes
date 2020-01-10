@@ -1,0 +1,102 @@
+apiVersion: apps/v1  #Deployment and StatefulSet is defined in apps/v1 not in corev1
+kind: StatefulSet
+metadata:
+  name: ${masterNodeName} #StatefulSet name
+  namespace: ${namespace}   #should be int the same namespace as headless service
+  labels:
+    app: ${masterNodeName}
+spec:
+  serviceName: ${masterNodeName} #Headless Service name, will be used to generate the pod name
+  replicas: 1         #we only need 1 master
+  podManagementPolicy: Parallel     #default is OrderedReady
+  selector:
+    matchLabels:
+      app: ${masterNodeName}  #used to identify the service
+  template:
+    metadata:
+      labels:
+        app: ${masterNodeName}
+    spec:
+      dnsConfig: {}
+      dnsPolicy: ClusterFirst    
+      restartPolicy: Always
+      schedulerName: default-scheduler       
+      terminationGracePeriodSeconds: 10
+      containers:
+        - name: multichain-${masterNodeName}  
+          image: 127.0.0.1:5000/menglong567:multichain-master
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/bash","/root/setup-master.sh"]
+          args: ["/home/multichain-${masterNodeName}/data","${chainName}","10000","10001"] #datadir chainname port rpcport
+          ports:
+            - name: network
+              containerPort: 10000 #in really system end user can give this value
+            - name: rpc
+              containerPort: 10001 #in really system end user can give this value           
+          volumeMounts:
+            - mountPath: /home/multichain-${masterNodeName}/data  #directory in docker container    
+              name: data
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          resources:
+            requests:
+              memory: "${memoryRequest}Mi" # ${memoryRequest}
+              cpu: "${cpuRequest}m" # ${cpuRequest}
+            limits:
+              memory: "${memoryLimit}Mi" #${memoryLimit}
+              cpu: "${cpuLimit}m"    # ${cpuLimit}
+      volumes:
+      - name: data
+        hostPath:
+          path: /home/multichain-${masterNodeName}-k8s/data  # directory location on host
+          type: DirectoryOrCreate  # this could be Directory / DirectoryOrCreate   
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ${masterNodeName} # headless service name, will be used to be part of the DNS name
+  namespace: ${namespace}
+  labels:
+    app: ${masterNodeName}
+spec:
+  clusterIP: None  #headless service
+  ports:
+    - name: network #network port
+      port: 10000 #in really system end user can give this value
+      targetPort: 10000 # The best way should be determined by system but here we just fix it
+    - name: rpc #rpc port
+      port: 10001   #in really system end user can give this value
+      targetPort: 10001 # The best way should be determined by system but here we just fix it
+  selector:
+    app: ${masterNodeName} # should match the selector.matchLabels  for StatefulSet  which is 'app: ${masterNodeName}'
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ${masterNodeName}-nodeport #nodeport service name
+  namespace: ${namespace}
+  labels:
+    app: ${masterNodeName}-nodeport
+spec:
+  type: NodePort
+  ports:
+  - port: 10000  #network port
+    nodePort: 31000 # The best way should be determined by system but here we just fix it
+    name: network
+  - port: 10001  #rpc port
+    nodePort: 31001 # The best way should be determined by system but here we just fix it
+    name: rpc
+  selector:
+    app: ${masterNodeName}   # should match the selector.matchLabels  for StatefulSet which is 'app: ${masterNodeName}'
+
+#Located in the same namespace,{pod-name}.{headless-service-name}
+#http://${masterNodeName}-0.${masterNodeName}:10000
+#http://${masterNodeName}-0.${masterNodeName}:10001
+#Located in different namespace,stateheadless+headless service, {pod-name}.{headless-service-name}.{namespace}.svc.cluster.local
+#http://${masterNodeName}-0.${masterNodeName}.${namespace}.svc.cluster.local:10000
+#http://${masterNodeName}-0.${masterNodeName}.${namespace}.svc.cluster.local:10001
+#Located not in the same cluster
+#http://nodeip:31001

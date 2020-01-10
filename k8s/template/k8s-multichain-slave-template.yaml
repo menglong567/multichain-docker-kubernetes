@@ -1,0 +1,102 @@
+apiVersion: apps/v1  #Deployment and StatefulSet is defined in apps/v1 not in corev1
+kind: StatefulSet
+metadata:
+  name: ${slaveNodeName}  #StatefulSet name
+  namespace: ${slaveNodeNamespace}  #必须和headless service在一个namespace
+  labels:
+    app: ${slaveNodeName}
+spec:
+  serviceName: ${slaveNodeName} #serviceName为Headless Service的名字, will be used to generate the pod name
+  replicas: 1         
+  podManagementPolicy: Parallel     #Pod启停顺序管理 ,default is OrderedReady
+  selector:
+    matchLabels:
+      app: ${slaveNodeName}  #used to identify the service
+  template:
+    metadata:
+      labels:
+        app: ${slaveNodeName}
+    spec:
+      dnsConfig: {}
+      dnsPolicy: ClusterFirst    
+      restartPolicy: Always
+      schedulerName: default-scheduler       
+      terminationGracePeriodSeconds: 10    #当删除Pod时，等待时间
+      containers:
+        - name: multichain-${slaveNodeName}
+          image: 127.0.0.1:5000/menglong567:multichain-slave
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/bash","/root/setup-slave.sh"]
+          args: ["/home/multichain-${slaveNodeName}/data","${chainName}","10000","10001","${masterNodeName}-0.${masterNodeName}.${masterNamespace}.svc.cluster.local","10000"] #datadir chainname port rpcport masterip masterport
+          ports:
+            - name: network
+              containerPort: 10000  #in really system end user can give this value
+            - name: rpc 
+              containerPort: 10001  #in really system end user can give this value          
+          volumeMounts:
+            - mountPath: /home/multichain-${slaveNodeName}/data  #directory in docker container    
+              name: data
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          resources:
+            requests:
+              memory: "${memoryRequest}Mi" #${memoryRequest}
+              cpu: "${cpuRequest}m" #${cpuRequest}
+            limits:
+              memory: "${memoryLimit}Mi" #${memoryLimit}
+              cpu: "${cpuLimit}m"    #${cpuLimit}
+      volumes:
+      - name: data
+        hostPath:
+          path: /home/multichain-${slaveNodeName}-k8s/data  # directory location on host
+          type: DirectoryOrCreate  # this could be Directory / DirectoryOrCreate   
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ${slaveNodeName} # headless service name, will be used to be part of the DNS name
+  namespace: ${slaveNodeNamespace}
+  labels:
+    app: ${slaveNodeName}
+spec:
+  clusterIP: None  #表明这是一个headless service
+  ports:
+    - name: network #network port
+      port: 10000 #in really system end user can give this value
+      targetPort: 10000 #in really system end user can give this value
+    - name: rpc # rpc port
+      port: 10001   #in really system end user can give this value
+      targetPort: 10001 #in really system end user can give this value
+  selector:
+    app: ${slaveNodeName} # should match the selector.matchLabels  for StatefulSet  which is 'app: ${slaveNodeName}'
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ${slaveNodeName}-nodeport #nodeport service name
+  namespace: ${slaveNodeNamespace}
+  labels:
+    app: ${slaveNodeName}-nodeport
+spec:
+  type: NodePort #表明这个service类型是nodeport
+  ports:
+  - port: 10000  #network port
+    nodePort: ${networkPort}
+    name: network
+  - port: 10001  #rpc port
+    nodePort: ${rpcPort}
+    name: rpc
+  selector:
+    app: ${slaveNodeName}   # should match the selector.matchLabels  for StatefulSet which is 'app: ${slaveNodeName}'
+
+#下面这种方式针对在同一个namespace中, {pod-name}.{headless-service-name}
+#http://${slaveNodeName}-0.${slaveNodeName}:10000
+#http://${slaveNodeName}-0.${slaveNodeName}:10001
+#下面这种方式针对跨越不同namespace，使用的是stateheadless+headless service的DNS地址, {pod-name}.{headless-service-name}.{namespace}.svc.cluster.local
+#http://${slaveNodeName}-0.${slaveNodeName}.${namespace}.svc.cluster.local:10000
+#http://${slaveNodeName}-0.${slaveNodeName}.${namespace}.svc.cluster.local:10001
+#下面这种方式表明不在本cluster种，需要使用NodePort方式访问rpc
+#http://nodeip:31003

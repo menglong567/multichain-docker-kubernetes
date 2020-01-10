@@ -1,0 +1,93 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ubs-group-nodeport #nodeport service name
+  namespace: multichain-ubs-group-ns
+  labels:
+    app: ubs-group-nodeport
+spec:
+  type: NodePort #表明这个service类型是nodeport
+  ports:
+  - port: 10000  #network port
+    nodePort: 31004
+    name: network
+  - port: 10001  #rpc port
+    nodePort: 31005
+    name: rpc
+  selector:
+    app: ubs-group   # should match the selector.matchLabels  for StatefulSet which is 'app: ubs-group'
+---    
+apiVersion: v1
+kind: Service
+metadata:
+  name: ubs-group # headless service name, will be used to be part of the DNS name
+  namespace: multichain-ubs-group-ns
+  labels:
+    app: ubs-group
+spec:
+  clusterIP: None  #表明这是一个headless service
+  ports:
+    - name: network #network port
+      port: 10000
+      targetPort: 10000
+    - name: rpc
+      port: 10001   #rpc port
+      targetPort: 10001
+  selector:
+    app: ubs-group # should match the selector.matchLabels  for StatefulSet  which is 'app: ubs-group'
+---
+apiVersion: apps/v1  #Deployment and StatefulSet is defined in apps/v1 not in corev1
+kind: StatefulSet
+metadata:
+  name: ubs-group #StatefulSet name
+  namespace: multichain-ubs-group-ns  #必须和headless service在一个namespace
+  labels:
+    app: ubs-group
+spec:
+  serviceName: ubs-group #serviceName为Headless Service的名字, will be used to generate the pod name
+  replicas: 1         
+  podManagementPolicy: Parallel     #Pod启停顺序管理 ,default is OrderedReady
+  selector:
+    matchLabels:
+      app: ubs-group  #used to identify the service
+  template:
+    metadata:
+      labels:
+        app: ubs-group
+    spec:
+      dnsConfig: {}
+      dnsPolicy: ClusterFirst    
+      restartPolicy: Always
+      schedulerName: default-scheduler       
+      terminationGracePeriodSeconds: 10    #当删除Pod时，等待时间
+      containers:
+        - name: multichain-ubs-group-node-1
+          image: 127.0.0.1:5000/menglong567:multichain-slave
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/bash","/root/setup-slave.sh"]
+          args: ["/home/multichain-ubs-group-node-1/data","DemoChain","10000","10001","master-0.master.multichain-demochain.svc.cluster.local","10000"] #datadir chainname port rpcport masterip masterport
+          ports:
+            - name: network
+              containerPort: 10000 
+            - name: rpc
+              containerPort: 10001            
+          volumeMounts:
+            - mountPath: /home/multichain-ubs-group-node-1/data  #directory in docker container    
+              name: data
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          resources:
+            requests:
+              memory: "400Mi"
+              cpu: "350m"
+            limits:
+              memory: "400Mi"
+              cpu: "350m"    
+      volumes:
+      - name: data
+        hostPath:
+          path: /home/multichain-ubs-group-node-1/data  # directory location on host
+          type: DirectoryOrCreate  # this could be Directory / DirectoryOrCreate

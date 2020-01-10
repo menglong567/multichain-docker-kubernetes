@@ -1,0 +1,79 @@
+#setup master and slave nodes
+version: '3'
+services:
+
+  multichain-master:
+    build:
+      context: ../master
+    image: menglong567:multichain-master
+    ports:
+      - "10000:10000" #default-network-port
+      - "10001:10001" #default-rpc-port
+    #datadir chainname port rpcport
+    entrypoint: ["/bin/bash","/root/setup-master.sh","/home/multichain-master/data","DemoChain","10000","10001"]
+    container_name: multichain-master
+    volumes:
+      - /home/multichain-master/data:/home/multichain-master/data
+    networks:
+       multichain-network:
+          ipv4_address: 172.30.0.2
+    ulimits:
+       nproc: 65535
+       nofile:
+         soft: 20000
+         hard: 40000  
+
+
+  multichain-slave-1:
+    build:
+      context: ../slave
+    image: menglong567:multichain-slave
+    ports:
+      - "10002:10000" #default-network-port
+      - "10003:10001" #default-rpc-port
+    #datadir chainname port rpcport
+    entrypoint: ["/bin/bash","/root/setup-slave.sh","/home/multichain-slave-1/data","DemoChain","10000","10001","172.30.0.2","10000"]
+    depends_on:
+      - multichain-master
+    container_name: multichain-slave-1
+    volumes:
+      - /home/multichain-slave-1/data:/home/multichain-slave-1/data
+    networks:
+       multichain-network:
+          ipv4_address: 172.30.0.3
+    ulimits:
+       nproc: 65535
+       nofile:
+         soft: 20000
+         hard: 40000   
+         
+         
+  multichain-slave-2:
+    build:
+      context: ../slave
+    image: menglong567:multichain-slave
+    ports:
+      - "10004:10000" #default-network-port
+      - "10005:10001" #default-rpc-port
+    #datadir chainname port rpcport
+    entrypoint: ["/bin/bash","/root/setup-slave.sh","/home/multichain-slave-2/data","DemoChain","10000","10001","172.30.0.2","10000"]
+    depends_on:
+      - multichain-master
+    container_name: multichain-slave-2
+    volumes:
+      - /home/multichain-slave-2/data:/home/multichain-slave-2/data
+    networks:
+       multichain-network:
+          ipv4_address: 172.30.0.4
+    ulimits:
+       nproc: 65535
+       nofile:
+         soft: 20000
+         hard: 40000            
+    
+networks:
+   multichain-network:
+      ipam:
+         driver: default 
+         config:
+         - subnet: 172.30.0.0/16    

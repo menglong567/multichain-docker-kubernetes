@@ -1,2 +1,17 @@
 # multichain-docker-kubernetes
-A simple project to deploy 3-nodes network based on multichain
+> A simple project to deploy 3-nodes network based on multichain network
+
+### Introduction
+> This Simple Project is used to deploy
+
+### Whole Picture
+> Here i'm giving the whole picture of this simple project as below 
+
+###Simple Explanation
+> -
+> -
+> -
+> -
+
+### Support or Contact
+> If you have question please contact me via menglong567@aliyun.com

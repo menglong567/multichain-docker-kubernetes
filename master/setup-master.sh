@@ -1,5 +1,4 @@
 #!/bin/bash
-
 if [ $# != 4 ] ; then 
    echo "Error:paras is not complete...............[ datadir chainname port rpcport ], the order of the paras should be as detailed!"
    exit 1

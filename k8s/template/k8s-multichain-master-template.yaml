@@ -30,9 +30,9 @@ spec:
           args: ["/home/multichain-${masterNodeName}/data","${chainName}","10000","10001"] #datadir chainname port rpcport
           ports:
             - name: network
-              containerPort: 10000 #in really system end user can give this value
+              containerPort: 10000 #in really system end user can give this value dynamically
             - name: rpc
-              containerPort: 10001 #in really system end user can give this value           
+              containerPort: 10001 #in really system end user can give this value dynamically
           volumeMounts:
             - mountPath: /home/multichain-${masterNodeName}/data  #directory in docker container    
               name: data
@@ -65,10 +65,10 @@ spec:
   clusterIP: None  #headless service
   ports:
     - name: network #network port
-      port: 10000 #in really system end user can give this value
+      port: 10000 #in really system end user can give this value dynamically
       targetPort: 10000 # The best way should be determined by system but here we just fix it
     - name: rpc #rpc port
-      port: 10001   #in really system end user can give this value
+      port: 10001   #in really system end user can give this value dynamically
       targetPort: 10001 # The best way should be determined by system but here we just fix it
   selector:
     app: ${masterNodeName} # should match the selector.matchLabels  for StatefulSet  which is 'app: ${masterNodeName}'
@@ -84,10 +84,10 @@ spec:
   type: NodePort
   ports:
   - port: 10000  #network port
-    nodePort: 31000 # The best way should be determined by system but here we just fix it
+    nodePort: ${nodeportnetworkPort} # The best way should be determined by system but here we just fix it
     name: network
   - port: 10001  #rpc port
-    nodePort: 31001 # The best way should be determined by system but here we just fix it
+    nodePort: ${nodeportrpcPort} # The best way should be determined by system but here we just fix it
     name: rpc
   selector:
     app: ${masterNodeName}   # should match the selector.matchLabels  for StatefulSet which is 'app: ${masterNodeName}'

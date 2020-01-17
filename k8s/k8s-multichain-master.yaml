@@ -8,15 +8,15 @@ metadata:
 spec:
   type: NodePort #表明这个service类型是nodeport
   ports:
-  - port: 10000  #network port
-    nodePort: 31000
-    name: network
-  - port: 10001  #rpc port
-    nodePort: 31001
-    name: rpc
+    - port: 10000  #network port
+      nodePort: 31000
+      name: network
+    - port: 10001  #rpc port
+      nodePort: 31001
+      name: rpc
   selector:
     app: master   # should match the selector.matchLabels  for StatefulSet which is 'app: master'
----    
+---
 apiVersion: v1
 kind: Service
 metadata:
@@ -56,9 +56,9 @@ spec:
         app: master
     spec:
       dnsConfig: {}
-      dnsPolicy: ClusterFirst    
+      dnsPolicy: ClusterFirst
       restartPolicy: Always
-      schedulerName: default-scheduler       
+      schedulerName: default-scheduler
       terminationGracePeriodSeconds: 10    #当删除Pod时，等待时间
       containers:
         - name: multichain-master
@@ -68,9 +68,9 @@ spec:
           args: ["/home/multichain-master/data","DemoChain","10000","10001"] ##datadir chainname port rpcport
           ports:
             - name: network
-              containerPort: 10000 
+              containerPort: 10000
             - name: rpc
-              containerPort: 10001            
+              containerPort: 10001
           volumeMounts:
             - mountPath: /home/multichain-master/data  #directory in docker container    
               name: data
@@ -85,12 +85,12 @@ spec:
               cpu: "350m"
             limits:
               memory: "400Mi"
-              cpu: "350m"    
+              cpu: "350m"
       volumes:
-      - name: data
-        hostPath:
-          path: /home/multichain-master-k8s/data  # directory location on host
-          type: DirectoryOrCreate  # this could be Directory / DirectoryOrCreate   
+        - name: data
+          hostPath:
+            path: /home/multichain-master-k8s/data  # directory location on host
+            type: DirectoryOrCreate  # this could be Directory / DirectoryOrCreate
 
 #下面这种方式针对在同一个namespace中, {pod-name}.{headless-service-name}
 #http://master-0.master:10000

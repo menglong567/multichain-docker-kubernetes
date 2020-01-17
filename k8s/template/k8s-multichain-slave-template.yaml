@@ -30,9 +30,9 @@ spec:
           args: ["/home/multichain-${slaveNodeName}/data","${chainName}","10000","10001","${masterNodeName}-0.${masterNodeName}.${masterNamespace}.svc.cluster.local","10000"] #datadir chainname port rpcport masterip masterport
           ports:
             - name: network
-              containerPort: 10000  #in really system end user can give this value
+              containerPort: 10000  #in really system end user can give this value dynamically
             - name: rpc 
-              containerPort: 10001  #in really system end user can give this value          
+              containerPort: 10001  #in really system end user can give this value dynamically
           volumeMounts:
             - mountPath: /home/multichain-${slaveNodeName}/data  #directory in docker container    
               name: data
@@ -66,10 +66,10 @@ spec:
   ports:
     - name: network #network port
       port: 10000 #in really system end user can give this value
-      targetPort: 10000 #in really system end user can give this value
+      targetPort: 10000 #in really system end user can give this value dynamically
     - name: rpc # rpc port
       port: 10001   #in really system end user can give this value
-      targetPort: 10001 #in really system end user can give this value
+      targetPort: 10001 #in really system end user can give this value dynamically
   selector:
     app: ${slaveNodeName} # should match the selector.matchLabels  for StatefulSet  which is 'app: ${slaveNodeName}'
 ---
@@ -84,10 +84,10 @@ spec:
   type: NodePort #表明这个service类型是nodeport
   ports:
   - port: 10000  #network port
-    nodePort: ${networkPort}
+    nodePort: ${nodeportnetworkPort}
     name: network
   - port: 10001  #rpc port
-    nodePort: ${rpcPort}
+    nodePort: ${nodeportrpcPort}
     name: rpc
   selector:
     app: ${slaveNodeName}   # should match the selector.matchLabels  for StatefulSet which is 'app: ${slaveNodeName}'

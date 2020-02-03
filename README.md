@@ -7,14 +7,6 @@
 
 This is just a sub-project of the MLBaaSPlatform , please refer to https://github.com/menglong567/MLBaaSPlatfrom for the whole picture of the BaaS
 
-### Whole Picture
-> Here i'm giving the whole picture of this simple project as below 
-
-###Simple Explanation
-> -
-> -
-> -
-> -
 
 ### Support or Contact
 > If you have question please contact me via menglong567@aliyun.com

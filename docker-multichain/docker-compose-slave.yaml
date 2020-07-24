@@ -4,7 +4,7 @@ services:
 
   multichain-slave-1:
     build:
-      context: ../slave
+      context: ./slave
     image: menglong567:multichain-slave
     ports:
       - "10002:10000" #default-network-port
@@ -26,7 +26,7 @@ services:
          
   multichain-slave-2:
     build:
-      context: ../slave
+      context: ./slave
     image: menglong567:multichain-slave
     ports:
       - "10004:10000" #default-network-port

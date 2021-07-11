@@ -5,12 +5,9 @@ RUN apt-get update \
         && apt-get dist-upgrade -q -y \
         && apt-get install -q -y wget curl \
         && apt-get clean \
-        && rm -rf /var/lib/apt/lists/* \
-        && cd /tmp \
-        && wget https://www.multichain.com/download/multichain-2.0.3.tar.gz \
-        && tar -xvzf multichain-2.0.3.tar.gz \
-        && cd multichain-2.0.3 \
-        && mv multichaind multichain-cli multichain-util /usr/local/bin \
-        && cd /tmp \
-        && rm -Rf multichain-2.0.3*
+        && rm -rf /var/lib/apt/lists/*
+COPY 2.0.3/multichain-cli /usr/local/bin/multichain-cli
+COPY 2.0.3/multichain-util /usr/local/bin/multichain-util
+COPY 2.0.3/multichaind /usr/local/bin/multichaind
+COPY 2.0.3/multichaind-cold /usr/local/bin/multichaind-cold
 CMD ["/bin/bash"]
